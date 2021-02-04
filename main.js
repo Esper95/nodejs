@@ -157,7 +157,7 @@ var app = http.createServer(function(request, response) {
         });
     } else {
         response.writeHead(404);
-        response.end('Not Found');
+        response.end('Not 404');
     }
 
 
