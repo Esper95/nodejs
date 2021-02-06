@@ -1,34 +1,8 @@
 var http = require('http');
 var fs = require('fs');
 var url = require('url');
-
-var template ={
-    html : function (title, list, body, control) {
-        return`<!doctype html>
-      <html>
-      <head>
-      <title>WEB1 - ${title}</title>
-      <meta charset="utf-8">
-      </head>
-      <body>
-        <h1><a href="/">WEB</a></h1>
-        ${list}
-        ${control}
-        ${body}
-      </body>
-      </html>`;
-    },
-    list : function (filelist) {
-        var list = '<ul>';
-        for (let i = 0; i < filelist.length; i++) {
-            list += `<li><a href="/?id=${filelist[i]}">${filelist[i]}</a></li>`;
-        }
-        list += '</ul>';
-        return list;
-    }
-}
-
-
+var template = require('./lib/template.js');
+var path = require('path');
 
 
 var app = http.createServer(function(request, response) {
@@ -41,19 +15,19 @@ var app = http.createServer(function(request, response) {
     if (pathname === '/') {
         if (title === undefined) {
             fs.readdir('./data', function(error, filelist) {
-                console.log(filelist)
                 title = "Welcome";
                 description = "Hello, Node.js"
 
                 var list = template.list(filelist);
-                var html = template.html(title, list, 
-                `<h2>${title}</h2><p>${description}</p>`, `<a href="/create">create</a>`);
+                var html = template.html(title, list,
+                    `<h2>${title}</h2><p>${description}</p>`, `<a href="/create">create</a>`);
                 response.writeHead(200);
                 response.end(html);
             });
         } else {
             fs.readdir('./data', function(error, filelist) {
-                fs.readFile(`data/${title}`, 'utf8', function(err, description) {
+                var filteredId = path.parse(`${title}`).base;
+                fs.readFile(`data/${filteredId}`, 'utf8', function(err, description) {
                     var list = template.list(filelist);
                     var html = template.html(title, list, `<h2>${title}</h2><p>${description}</p>`,
                         `<a href="/create">create</a><a href="/update?id=${title}">update</a>
@@ -95,15 +69,17 @@ var app = http.createServer(function(request, response) {
         request.on('end', function() {
             var post = qs.parse(body);
             var title = post.title;
+            var filteredId = path.parse(`${title}`).base;
             var description = post.description;
-            fs.writeFile(`data/${title}`, description, 'utf8', function(err) {
+            fs.writeFile(`data/${filteredId}`, description, 'utf8', function(err) {
                 response.writeHead(302, { Location: `/?id=${title}` });
                 response.end();
             })
         });
     } else if (pathname === '/update') {
         fs.readdir('./data', function(error, filelist) {
-            fs.readFile(`data/${title}`, 'utf8', function(err, description) {
+            var filteredId = path.parse(`${title}`).base;
+            fs.readFile(`data/${filteredId}`, 'utf8', function(err, description) {
                 var list = template.list(filelist);
                 var html = template.html(title, list,
                     `
